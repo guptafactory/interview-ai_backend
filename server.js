@@ -8,7 +8,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const PORT = process.env.PORT || 3000;
 
 try {
-  connectToDB();
+  await connectToDB();
 
   app.listen(PORT, () => {
     console.log(`Server is running on ${PORT}`);
