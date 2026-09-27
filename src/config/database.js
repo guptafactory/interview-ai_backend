@@ -1,14 +1,19 @@
 import mongoose from "mongoose";
+import { env } from "./env.js";
 
 async function connectToDB() {
-  try {
-    console.log("Connecting to MongoDB...");
-    await mongoose.connect(process.env.MONGO_URI);
+  mongoose.connection.on("connected", () => console.log("[db] connected"));
+  mongoose.connection.on("error", (err) => console.error("[db] error", err));
+  mongoose.connection.on("disconnected", () =>
+    console.warn("[db] disconnected"),
+  );
 
-    console.log("MongoDB connected successfully");
-  } catch (err) {
-    console.error("MongoDB connection failed:", err);
-  }
+  await mongoose.connect(env.MONGO_URI, {
+    serverSelectionTimeoutMS: 10_000,
+    socketTimeoutMS: 45_000,
+    maxPoolSize: env.NODE_ENV === "production" ? 20 : 5,
+    autoIndex: env.NODE_ENV !== "production", // create indexes via migration in prod
+  });
 }
 
 export default connectToDB;
