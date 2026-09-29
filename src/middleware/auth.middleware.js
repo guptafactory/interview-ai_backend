@@ -17,7 +17,7 @@ async function authUser(req, res, next) {
     if (revoked)
       return res.status(401).json({ message: "Session has been revoked" });
 
-    req.user = { id: decoded.sub };
+    req.user = { id: decoded.id };
     return next();
   } catch (err) {
     console.error(err);

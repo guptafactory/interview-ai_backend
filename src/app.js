@@ -20,7 +20,7 @@ app.use(helmet());
 app.use(compression());
 app.use(
   cors({
-    origin: env.CORS_ORIGINS, // explicit list, e.g. ["https://interview-ai.app"]
+    origin: env.CORS_ORIGINS,
     credentials: true,
     methods: ["GET", "POST", "PATCH", "DELETE"],
   }),

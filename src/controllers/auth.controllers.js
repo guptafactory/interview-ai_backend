@@ -32,9 +32,13 @@ async function registerUser(req, res) {
       password: passHash,
     });
 
-    const token = jwt.sign({ id: user._id.toString() }, env.JWT_SECRET, {
-      expiresIn: "1d",
-    });
+    const token = jwt.sign(
+      { id: user._id, username: user.username },
+      env.JWT_SECRET,
+      {
+        expiresIn: "1d",
+      },
+    );
 
     res.cookie("token", token, {
       httpOnly: true,
@@ -52,7 +56,7 @@ async function registerUser(req, res) {
       },
     });
   } catch (error) {
-    if (err?.code === 11000) {
+    if (error?.code === 11000) {
       return res
         .status(409)
         .json({ message: "An account with these credentials already exists" });
@@ -92,9 +96,7 @@ async function loginUser(req, res) {
     }
 
     const token = jwt.sign(
-      {
-        sub: user._id.toString(),
-      },
+      { id: user._id, username: user.username },
       env.JWT_SECRET,
       {
         expiresIn: "1d",
