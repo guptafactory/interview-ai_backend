@@ -18,6 +18,7 @@ const schema = z.object({
         .map((s) => s.trim())
         .filter(Boolean),
     ),
+  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
 });
 
 const parsed = schema.safeParse(process.env);

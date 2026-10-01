@@ -3,9 +3,10 @@ import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import cors from "cors";
 import compression from "compression";
-import { env } from "./config/env.js";
 
-import authRouter from "./routes/auth.routes.js";
+import { env } from "./config/env.js";
+import authRouter from "./routes/auth.route.js";
+import interviewRouter from "./routes/auth.route.js";
 import {
   notFoundHandler,
   errorHandler,
@@ -34,6 +35,7 @@ app.get("/", (req, res) =>
 app.get("/healthz", (req, res) => res.status(200).json({ status: "ok" }));
 
 app.use("/api/v1/auth", authRouter);
+app.use("/api/v1/interview", interviewRouter);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

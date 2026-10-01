@@ -12,7 +12,7 @@ import {
   loginUser,
   logoutUser,
   getMe,
-} from "../controllers/auth.controllers.js";
+} from "../controllers/auth.controller.js";
 
 const authRouter = Router();
 

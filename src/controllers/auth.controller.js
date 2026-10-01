@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
-import userModel from "./../models/user.model.js";
-import blacklistTokenModel from "./../models/blacklistToken.model.js";
+import userModel from "../models/user.model.js";
+import blacklistTokenModel from "../models/blacklistToken.model.js";
 import { hashPassword, verifyPassword } from "../utils/password.js";
 
 async function registerUser(req, res) {
