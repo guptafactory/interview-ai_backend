@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { GoogleGenAI } from "@google/genai";
 import { env } from "../config/env.js";
+import { AppError } from "../utils/AppError.js";
 
 const ai = new GoogleGenAI({
   apiKey: env.GEMINI_API_KEY,
@@ -105,8 +106,8 @@ const interviewReportZodSchema = z.object({
 
 const interviewReportJsonSchema = z.toJSONSchema(interviewReportZodSchema);
 
-async function generateInterviewReport(
-  resume,
+async function generateReportByAI(
+  resumeContent,
   selfDescription,
   jobDescription,
 ) {
@@ -114,7 +115,7 @@ async function generateInterviewReport(
         Generate an interview preparation report for the candidate.
 
         Candidate Resume:
-        ${resume}
+        ${resumeContent}
 
         Candidate Self Description:
         ${selfDescription}
@@ -131,24 +132,54 @@ async function generateInterviewReport(
 
         The questions and preparation plan should be specific to this candidate and this job description.`;
 
-  const interaction = await ai.interactions.create({
-    model: "gemini-3.5-flash-lite",
+  let interaction;
+  try {
+    interaction = await ai.interactions.create({
+      model: "gemini-3.5-flash-lite",
 
-    input: prompt,
+      input: prompt,
 
-    response_format: {
-      type: "text",
-      mime_type: "application/json",
-      schema: interviewReportJsonSchema,
-    },
-  });
+      response_format: {
+        type: "text",
+        mime_type: "application/json",
+        schema: interviewReportJsonSchema,
+      },
+    });
+  } catch (cause) {
+    const error = new AppError(
+      "The AI service is unavailable right now. Please try again shortly.",
+      503,
+      "AI_UNAVAILABLE",
+    );
+    error.cause = cause; // logged, never sent to the client
+    throw error;
+  }
 
-  const validatedReport = interviewReportZodSchema.parse(
-    JSON.parse(interaction.output_text),
-  );
+  let parsedOutput;
+  try {
+    parsedOutput = JSON.parse(interaction.output_text);
+  } catch {
+    throw new AppError(
+      "The AI returned a response we could not read",
+      502,
+      "AI_RESPONSE_INVALID",
+    );
+  }
 
-  console.log(JSON.stringify(validatedReport, null, 2));
-  return validatedReport;
+  const validatedReport = interviewReportZodSchema.safeParse(parsedOutput);
+  if (!validatedReport.success) {
+    throw new AppError(
+      "The AI returned a report in an unexpected format",
+      502,
+      "AI_RESPONSE_INVALID",
+      validatedReport.error.issues.map((issue) => ({
+        field: issue.path.join("."),
+        message: issue.message,
+      })),
+    );
+  }
+
+  return validatedReport.data;
 }
 
-export default generateInterviewReport;
+export default generateReportByAI;

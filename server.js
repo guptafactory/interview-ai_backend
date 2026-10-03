@@ -3,23 +3,31 @@ import dns from "dns";
 import app from "./src/app.js";
 import connectToDB from "./src/config/database.js";
 import { env } from "./src/config/env.js";
-import generateInterviewReport from "./src/services/ai.service.js";
-import { resume, selfDescription, jobDescription } from "./temp/temp.js";
 
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
+process.on("unhandledRejection", (reason) => {
+  console.error("[fatal] unhandled promise rejection", reason);
+  process.exit(1);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("[fatal] uncaught exception", err);
+  process.exit(1);
+});
+
 try {
   await connectToDB();
-  // await generateInterviewReport(resume, selfDescription, jobDescription);
 } catch (err) {
   console.error("[fatal] cannot start without a database", err);
   process.exit(1);
 }
 
-try {
-  const server = app.listen(env.PORT, () =>
-    console.log(`[server] listening on ${env.PORT}`),
-  );
-} catch (err) {
-  console.error(err);
-}
+const server = app.listen(env.PORT, () =>
+  console.log(`[server] listening on ${env.PORT}`),
+);
+
+server.on("error", (err) => {
+  console.error("[fatal] server failed to start", err);
+  process.exit(1);
+});
