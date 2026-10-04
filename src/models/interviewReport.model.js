@@ -105,9 +105,9 @@ const interviewReportSchema = new mongoose.Schema(
     behavioralQuestions: [behavioralQuestionSchema],
     skillGaps: [skillGapSchema],
     preparationPlan: [preparationPlanSchema],
-    title: {
+    jobTitle: {
       type: String,
-      required: [true, "Title is required"],
+      required: [true, "Job title is required"],
       trim: true,
       maxlength: 200,
     },

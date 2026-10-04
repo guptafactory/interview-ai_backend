@@ -1,6 +1,11 @@
+import mongoose from "mongoose";
 import { PDFParse } from "pdf-parse";
 import interviewReportModel from "./../models/interviewReport.model.js";
-import generateReportByAI from "./../services/ai.service.js";
+import {
+  generateReportByAI,
+  generateResumeHTMLbyAI,
+} from "./../services/ai.service.js";
+import generatePdfFromHtml from "../utils/htmlToPdf.js";
 import { AppError } from "../utils/AppError.js";
 
 /** pdf.js (under `pdf-parse`) reports unreadable input as "Invalid PDF ...". */
@@ -73,4 +78,78 @@ async function createInterviewReport(req, res) {
   }
 }
 
-export { createInterviewReport };
+async function getInterviewReportById(req, res) {
+  const { reportId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(reportId))
+    throw new AppError("Invalid ReportId", 400, "INVALID_REPORT_ID");
+
+  const interviewReport = await interviewReportModel.findOne({
+    _id: reportId,
+    user: req.user.id,
+  });
+
+  if (!interviewReport)
+    throw new AppError("No Interview report found", 404, "NO_REPORT_FOUND");
+
+  return res.status(200).json({
+    message: "Interview report fetched successfully",
+    interviewReport,
+  });
+}
+
+async function getAllInterviewReports(req, res) {
+  const interviewReports = await interviewReportModel
+    .find({ user: req.user.id })
+    .sort({ createdAt: -1 })
+    .select(
+      "-resumeContent -selfDescription -jobDescription -technicalQuestions -behavioralQuestions -skillGaps -preparationPlan",
+    );
+
+  if (!interviewReports)
+    throw new AppError("No Interview reports found", 404, "NO_REPORT_FOUND");
+
+  return res.status(200).json({
+    message: "Interview reports fetched successfully",
+    interviewReports,
+  });
+}
+
+async function createResumePDF(req, res) {
+  const { reportId } = req.params;
+
+  if (!mongoose.Types.ObjectId.isValid(reportId))
+    throw new AppError("Invalid ReportId", 400, "INVALID_REPORT_ID");
+
+  const interviewReport = await interviewReportModel.findById(reportId);
+
+  if (!interviewReport) {
+    return res.status(404).json({
+      message: "Interview report not found.",
+    });
+  }
+
+  const { resumeContent, selfDescription, jobDescription } = interviewReport;
+
+  const data = await generateResumeHTMLbyAI(
+    resumeContent,
+    selfDescription,
+    jobDescription,
+  );
+
+  const pdfBuffer = await generatePdfFromHtml(data?.html);
+
+  res.set({
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename=resume_${reportId}.pdf`,
+  });
+
+  res.send(pdfBuffer);
+}
+
+export {
+  createInterviewReport,
+  getInterviewReportById,
+  getAllInterviewReports,
+  createResumePDF,
+};
